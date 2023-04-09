@@ -132,7 +132,7 @@ class Plugin(object):
 
             for full_conn_name, ao_widget in vd.ao_widgets.items():
                 if full_conn_name.split('.').pop(0) == device_name:
-                    ao_widget.last_AO = do_widget.get_AO()
+                    ao_widget.last_AO = ao_widget.get_AO()
                     ao_widget.set_AO(None)
 
     def reconnect(self):
