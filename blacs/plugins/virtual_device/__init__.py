@@ -106,9 +106,11 @@ class Plugin(object):
                     continue
 
                 # Sync widget with underlying AO
-                ao_widget.state = device_tab._AO[connection_name].value
+                ao_widget.set_spinbox_value(device_tab._AO[connection_name].value, None)
                 # Assign AO to widget
                 ao_widget.set_AO(device_tab._AO[connection_name])
+                # Sync units with underlying AO
+                ao_widget.set_selected_unit(device_tab._AO[connection_name]._current_units)
 
                 # Prevents error when underlying AO is deleted during tab restart
                 device_tab.connect_restart_receiver(self.tab_restart_receiver)
