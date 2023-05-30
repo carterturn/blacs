@@ -284,7 +284,9 @@ class AO(object):
             
         # Further cleanup
         widget.disconnect_value_change()
+        widget.block_combobox_signals()
         widget.set_combobox_model(QStandardItemModel())
+        widget.unblock_combobox_signals()
         
     def change_unit(self,unit,program=True):     
         # These values are always stored in base units!
