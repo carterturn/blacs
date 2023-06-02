@@ -42,7 +42,7 @@ class Plugin(object):
         self.reconnect_thread.daemon = True
 
         self.tab_restart_receiver = lambda dn, s=self: self.disconnect_widgets(dn)
-        
+
     def on_tab_layout_change(self):
         self.connect_widgets()
 
@@ -145,24 +145,24 @@ class Plugin(object):
     # Standard plugin boilerplate
     def get_save_data(self):
         return {}
-    
+
     def get_callbacks(self):
         return {}
 
     def get_menu_class(self):
         return None
-        
+
     def get_notification_classes(self):
         return []
-        
+
     def get_setting_classes(self):
         return []
-    
+
     def set_menu_instance(self, menu):
         self.menu = menu
-        
+
     def set_notification_instances(self, notifications):
         self.notifications = notifications
-        
+
     def close(self):
         pass
