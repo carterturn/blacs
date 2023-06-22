@@ -38,7 +38,8 @@ class Plugin(object):
         self.initial_settings = initial_settings
         self.BLACS = None
         self.disconnected_last = False
-        self.reconnect_thread = threading.Thread(target=self.reconnect)
+        self.close_event = threading.Event()
+        self.reconnect_thread = threading.Thread(target=self.reconnect, args=(close_event))
         self.reconnect_thread.daemon = True
 
         self.tab_restart_receiver = lambda dn, s=self: self.disconnect_widgets(dn)
@@ -137,10 +138,9 @@ class Plugin(object):
                     ao_widget.last_AO = ao_widget.get_AO()
                     ao_widget.set_AO(None)
 
-    def reconnect(self):
-        while True:
+    def reconnect(self, stop_event):
+        while not stop_event.wait(CONNECT_CHECK_INTERVAL):
             self.connect_widgets()
-            time.sleep(CONNECT_CHECK_INTERVAL)
 
     # Standard plugin boilerplate
     def get_save_data(self):
@@ -165,4 +165,5 @@ class Plugin(object):
         self.notifications = notifications
 
     def close(self):
-        pass
+        self.close_event.set()
+        self.reconnect_thread.join()
