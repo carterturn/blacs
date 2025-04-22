@@ -813,7 +813,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     # Test case!
     
-    from connections import ConnectionTable
+    from labscript_utils.connections import ConnectionTable
     from labscript_utils.qtwidgets.dragdroptab import DragDropTabWidget
     
     class MyTab(DeviceTab):
@@ -869,7 +869,7 @@ if __name__ == '__main__':
             button2.clicked.connect(lambda: self.transition_to_manual(Queue()))
             self.get_tab_layout().addWidget(button2)
     
-    connection_table = ConnectionTable(r'example_connection_table.h5')
+    connection_table = ConnectionTable('../tests/device_base_classes_connection_table.h5')
     
     class MyWindow(QWidget):
         
@@ -880,14 +880,11 @@ if __name__ == '__main__':
         def closeEvent(self,event):
             if not self.are_we_closed:        
                 event.ignore()
-                self.my_tab.shutdown()
+                self.my_tab.close_tab()
                 self.are_we_closed = True
                 QTimer.singleShot(1000,self.close)
             else:
-                if not self.my_tab.shutdown_complete: 
-                    QTimer.singleShot(1000,self.close)                    
-                else:
-                    event.accept()
+                event.accept()
     
         def add_my_tab(self,tab):
             self.my_tab = tab
