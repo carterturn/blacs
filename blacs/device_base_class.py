@@ -26,7 +26,7 @@ from qtutils import UiLoader
 from blacs import BLACS_DIR
 from blacs.tab_base_classes import Tab, Worker, define_state
 from blacs.tab_base_classes import MODE_MANUAL, MODE_TRANSITION_TO_BUFFERED, MODE_TRANSITION_TO_MANUAL, MODE_BUFFERED
-from blacs.output_classes import AO, DO, DDS, Image
+from blacs.output_classes import AO, DO, DDS, Image, EO
 from labscript_utils.qtwidgets.toolpalette import ToolPaletteGroup
 from labscript_utils.shared_drive import path_to_agnostic
 
@@ -41,6 +41,7 @@ class DeviceTab(Tab):
         self._DO = {}
         self._DDS = {}
         self._image = {}
+        self._EO = {}
         
         self._final_values = {}
         self._last_programmed_values = {}
@@ -151,6 +152,13 @@ class DeviceTab(Tab):
     #                             },
     #                     }
     #
+    #
+    # eo_properties = {'hardware_channel_reference': {'options':['option 1', 'option 2']},
+    #                  'eo1': {'options': {'option 1': {'index': 0, 'tooltip': 'description 1'},
+    #                                      'option 2': {'index': 3, 'tooltip': 'description 2'},
+    #                                      'option 3': 1},
+    #                          'return_index': True}}
+
     def create_digital_outputs(self,digital_properties):
         for hardware_name,properties in digital_properties.items():
             # Save the DO object
@@ -222,7 +230,26 @@ class DeviceTab(Tab):
                 sub_chnls['gate'] = self._create_DO_object(connection_name,hardware_name+'_gate','gate',properties)
             
             self._DDS[hardware_name] = DDS(hardware_name,connection_name,sub_chnls)
+
+    def create_eo_outputs(self, eo_properties):
+        for output_name, properties in eo_properties.items():
+            self._EO[output_name] = self._create_eo_object(self.device_name, output_name, properties)
+
+    def _create_eo_object(self, parent_device, device_property, properties):
+        properties.setdefault('return_index', False)
+        return EO(device_property, parent_device, self.device_name, self.program_device, self.settings,
+                    properties['options'], properties['return_index'])
     
+    def create_eo_widgets(self,device_properties):
+        widgets = {}
+        for output_name, properties in device_properties.items():
+            properties.setdefault('display_name',output_name)
+            properties.setdefault('horizontal_alignment',False)
+            properties.setdefault('parent',None)
+            widgets[output_name] = self._EO[output_name].create_widget(properties['display_name'], properties['horizontal_alignment'], properties['parent'])
+
+        return widgets
+
     def get_child_from_connection_table(self, parent_device_name, port):
         return self.connection_table.find_child(parent_device_name, port)
     
@@ -361,7 +388,7 @@ class DeviceTab(Tab):
         self.restore_save_data(settings['saved_data'])
     
         self.settings = settings
-        for output in [self._AO, self._DO, self._image]:
+        for output in [self._AO, self._DO, self._image, self._EO]:
             for name,channel in output.items():
                 if not channel._locked:
                     channel._update_from_settings(settings)
@@ -374,8 +401,8 @@ class DeviceTab(Tab):
                         subchnl._update_from_settings(settings)
     
     def get_front_panel_values(self):
-        return {channel:item.value for output in [self._AO,self._DO,self._image,self._DDS] for channel,item in output.items()}
-    
+        return {channel:item.value for output in [self._AO,self._DO,self._image,self._DDS,self._EO] for channel,item in output.items()}
+
     def get_channel(self,channel):
         if channel in self._AO:
             return self._AO[channel]
@@ -385,6 +412,8 @@ class DeviceTab(Tab):
             return self._image[channel]
         elif channel in self._DDS:
             return self._DDS[channel]
+        elif channel in self._EO:
+            return self._EO[channel]
         else:
             return None
             
@@ -517,6 +546,16 @@ class DeviceTab(Tab):
                     changed = True
                     ui = UiLoader().load(os.path.join(BLACS_DIR, 'tab_value_changed.ui'))
                     ui.channel_label.setText(self._AO[channel].name)
+                    ui.front_value.setText(front_value)
+                    ui.remote_value.setText(remote_value)
+            elif channel in self._EO:
+                # very easy case, values are strings
+                front_value = str(self._last_programmed_values[channel])
+                remote_value = str(remote_value)
+                if front_value != remote_value:
+                    changed = True
+                    ui = UiLoader().load(os.path.join(BLACS_DIR, 'tab_value_changed.ui'))
+                    ui.channel_label.setText(self._EO[channel].name)
                     ui.front_value.setText(front_value)
                     ui.remote_value.setText(remote_value)
             else:
@@ -666,7 +705,8 @@ class DeviceTab(Tab):
                 self._image[channel].set_value(value,program=False)
             elif channel in self._DDS:
                 self._DDS[channel].set_value(value,program=False)
-        
+            elif channel in self._EO:
+                self._EO[channel].set_value(value,program=False)
         
             
         if success:
