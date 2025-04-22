@@ -231,24 +231,14 @@ class DeviceTab(Tab):
             
             self._DDS[hardware_name] = DDS(hardware_name,connection_name,sub_chnls)
 
-    def create_eo_outputs(self, eo_properties):
+    def create_enum_outputs(self, eo_properties):
         for output_name, properties in eo_properties.items():
-            self._EO[output_name] = self._create_eo_object(self.device_name, output_name, properties)
+            self._EO[output_name] = self._create_EO_object(self.device_name, output_name, properties)
 
-    def _create_eo_object(self, parent_device, device_property, properties):
+    def _create_EO_object(self, parent_device, device_property, properties):
         properties.setdefault('return_index', False)
         return EO(device_property, parent_device, self.device_name, self.program_device, self.settings,
                     properties['options'], properties['return_index'])
-    
-    def create_eo_widgets(self,device_properties):
-        widgets = {}
-        for output_name, properties in device_properties.items():
-            properties.setdefault('display_name',output_name)
-            properties.setdefault('horizontal_alignment',False)
-            properties.setdefault('parent',None)
-            widgets[output_name] = self._EO[output_name].create_widget(properties['display_name'], properties['horizontal_alignment'], properties['parent'])
-
-        return widgets
 
     def get_child_from_connection_table(self, parent_device_name, port):
         return self.connection_table.find_child(parent_device_name, port)
@@ -297,6 +287,23 @@ class DeviceTab(Tab):
                 widgets[hardware_name] = self._DDS[hardware_name].create_widget(*properties['args'],**properties['kwargs'])
         
         return widgets
+    
+    def create_enum_widgets(self,device_properties):
+
+        widgets = {}
+        for output_name, properties in device_properties.items():
+            properties.setdefault('display_name',output_name)
+            properties.setdefault('horizontal_alignment',False)
+            properties.setdefault('parent',None)
+            widgets[output_name] = self._EO[output_name].create_widget(properties['display_name'], properties['horizontal_alignment'], properties['parent'])
+
+        return widgets
+    
+    def auto_create_enum_widgets(self):
+        eo_properties = {}
+        for channel,_ in self._EO.items():
+            eo_properties[channel] = {}
+        return self.create_enum_widgets(eo_properties)
     
     def auto_create_widgets(self):
         dds_properties = {}
