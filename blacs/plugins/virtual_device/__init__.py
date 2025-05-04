@@ -275,8 +275,7 @@ class Menu(object):
                                ]
                 }
 
-    def make_virtual_device_output_row(self, name):
-        name_item = QStandardItem(name)
+    def make_virtual_device_output_row(self, name_item):
         up_item = QStandardItem()
         up_item.setIcon(QIcon(':qtutils/fugue/arrow-090'))
         up_item.setEditable(False)
@@ -386,20 +385,33 @@ class Menu(object):
             analog_outputs = QStandardItem('Analog Outputs')
             device_item.appendRow(analog_outputs)
             for AO in vd['AO']:
+                if AO[0] not in self.BLACS['ui'].blacs.tablist:
+                    # BLACS tab removed, remove virtual device
+                    continue
                 chan = self.BLACS['ui'].blacs.tablist[AO[0]].get_channel(AO[1])
-                analog_outputs.appendRow(self.make_virtual_device_output_row(AO[0] + '.' + chan.name))
+                ao_item = QStandardItem(AO[0] + '.' + chan.name)
+                analog_outputs.appendRow(self.make_virtual_device_output_row(ao_item))
 
             digital_outputs = QStandardItem('Digital Outputs')
             device_item.appendRow(digital_outputs)
             for DO in vd['DO']:
+                if DO[0] not in self.BLACS['ui'].blacs.tablist:
+                    # BLACS tab removed, remove virtual device
+                    continue
                 chan = self.BLACS['ui'].blacs.tablist[DO[0]].get_channel(DO[1])
-                digital_outputs.appendRow(self.make_virtual_device_output_row(DO[0] + '.' + chan.name))
+                do_item = QStandardItem(DO[0] + '.' + chan.name)
+                do_item.setData(DO[2], self.VD_TREE_ROLE_DO_INVERTED)
+                digital_outputs.appendRow(self.make_virtual_device_output_row(do_item))
 
             dds_outputs = QStandardItem('DDS Outputs')
             device_item.appendRow(dds_outputs)
             for DDS in vd['DDS']:
+                if DDS[0] not in self.BLACS['ui'].blacs.tablist:
+                    # BLACS tab removed, remove virtual device
+                    continue
                 chan = self.BLACS['ui'].blacs.tablist[DDS[0]].get_channel(DDS[1])
-                dds_outputs.appendRow(self.make_virtual_device_output_row(DDS[0] + '.' + chan.name))
+                dds_item = QStandardItem(DDS[0] + '.' + chan.name)
+                dds_outputs.appendRow(self.make_virtual_device_output_row(dds_item))
 
         add_vd_item = QStandardItem(self.VD_TREE_DUMMY_ROW_TEXT)
         add_vd_item.setData(True, self.VD_TREE_ROLE_IS_DUMMY_ROW)
