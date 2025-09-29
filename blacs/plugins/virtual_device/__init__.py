@@ -42,6 +42,19 @@ logger = logging.getLogger('BLACS.plugin.%s'%module)
 CONNECT_CHECK_INTERVAL = 0.1
 
 class Plugin(object):
+    '''
+    The `virtual_device` plugin provides a way to group analog, digital, and DDS outputs
+    that are related in purpose but attached to different hardware devices into a single BLACS tab.
+
+    A typical use case might be creating a "MOT" panel from analog and digital channels on a dedicated analog card and digital card.
+
+    To enable the `virtual_device` plugin, add the line `virtual_device = True`
+    to your `.ini` config file in the `labconfig` folder.
+    After restarting BLACS, click the `Edit` option in the new `Virtual Devices` menu
+    to begin constructing virtual devices.
+    Modifying virtual devices requires restarting BLACS.
+    '''
+
     def __init__(self, initial_settings):
         self.menu = None
         self.notifications = {}
