@@ -92,6 +92,10 @@ class Plugin(object):
             vd_tab.disconnect_widgets(closing_device_name)
 
     def reconnect(self, stop_event):
+        '''
+        Runs constantly in a second thread to reconnect widgets in virtual devices
+        to hardware devices after the hardware device tabs restart.
+        '''
         while not stop_event.wait(CONNECT_CHECK_INTERVAL):
             self.connect_widgets()
 
@@ -155,6 +159,15 @@ class Plugin(object):
             pass
 
 class Menu(object):
+    '''
+    The virtual device adding/editing menu.
+
+    Reads the connection table to determine what hardware is available,
+    then allows adding or removing hardware from virtual devices.
+
+    Stores new virtual devices in the Plugin object,
+    which does not reload them until a BLACS restart.
+    '''
     VD_TREE_DUMMY_ROW_TEXT = '<Click to add virtual device>'
 
     CT_TREE_COL_NAME = 0
@@ -211,6 +224,12 @@ class Menu(object):
         return AOs, DOs, DDSs
 
     def __init__(self, BLACS):
+        '''
+        Some small preparation for the menu.
+
+        Parses the connection table immediately,
+        defers parsing of current virtual devices so that they can be edited multiple times.
+        '''
         self.BLACS = BLACS
 
         self.connection_table_model = QStandardItemModel()
@@ -292,6 +311,12 @@ class Menu(object):
         return [name_item, up_item, dn_item, remove_item]
 
     def on_treeView_connection_table_clicked(self, index):
+        '''
+        Processes user clicking on an item in the connection table tree.
+
+        The only column we respond to is the "add" column.
+        This adds a hardware output to the currently selected virtual device
+        '''
         item = self.connection_table_model.itemFromIndex(index)
         if item.column() == self.CT_TREE_COL_ADD:
             # Add this output to the currently selected virtual devices
@@ -352,6 +377,15 @@ class Menu(object):
             item.setText(self.VD_TREE_DUMMY_ROW_TEXT)
 
     def on_treeView_virtual_devices_clicked(self, index):
+        '''
+        Processes user clicking on an item in the virtual device tree.
+
+        Options are:
+        -Dummy row clicked: add new device
+        -Up or down arrow clicked: reorder hardware output
+        -Remove virtual device clicked: remove virtual device
+        -Remove hardware output clicked: remove hardware output from virtual device
+        '''
         item = self.virtual_device_model.itemFromIndex(index)
         if item.data(self.VD_TREE_ROLE_IS_DUMMY_ROW):
             name_index = index.sibling(index.row(), self.VD_TREE_COL_NAME)
@@ -371,8 +405,11 @@ class Menu(object):
             item.parent().removeRow(index.row())
 
     def on_edit_virtual_devices(self, *args, **kwargs):
-        # Construct tree of virtual devices
-        # This happens here so that the tree is up to date
+        '''
+        Open the editing menu.
+
+        At this point, virtual devices are parsed and GUI objects are instantiated.
+        '''
         for vd_name, vd in self.BLACS['plugins'][module].get_save_virtual_devices().items():
             device_item = QStandardItem(vd_name)
             remove_item = QStandardItem()
@@ -497,6 +534,10 @@ class Menu(object):
         return virtual_device_data
 
     def on_save(self):
+        '''
+        Pass new virtual devices back to the plugin.
+        Instructs the user to restart BLACS to reload virtual devices.
+        '''
         self.BLACS['plugins'][module].set_save_virtual_devices(self._encode_virtual_devices())
         # Cleanup model in case editing window is reopened.
         self.virtual_device_model.removeRows(0, self.virtual_device_model.rowCount())
@@ -504,6 +545,9 @@ class Menu(object):
                                 'New virtual devices saved. Please restart BLACS to load new devices.')
 
     def on_cancel(self):
+        '''
+        Inform the user that nothing has happened.
+        '''
         self.virtual_device_model.removeRows(0, self.virtual_device_model.rowCount())
         QMessageBox.information(self.BLACS['ui'], 'Virtual Devices Not Saved',
                                 'Editing of virtual devices canceled.')
