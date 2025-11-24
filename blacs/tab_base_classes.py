@@ -782,7 +782,7 @@ class Tab(object):
                 # run the function in the Qt main thread
                 generator = inmain(func,self,*args,**kwargs)
                 # Do any work that was queued up:(we only talk to the worker if work has been queued up through the yield command)
-                if type(generator) == GeneratorType:
+                if isinstance(generator, GeneratorType):
                     # We need to call next recursively, queue up work and send the results back until we get a StopIteration exception
                     generator_running = True
                     # get the data from the first yield function
