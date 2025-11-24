@@ -992,7 +992,7 @@ class QueueManager(object):
                         message = self.process_request(path)
                     except Exception:
                         # TODO: make this error popup for the user
-                        self._logger.exception('Failed to copy h5_file (%s) for repeat run'%s)
+                        self._logger.exception('Failed to copy h5_file (%s) for repeat run' % path)
                     logger.info(message)      
 
             self.set_status("Idle")
