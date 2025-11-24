@@ -16,9 +16,17 @@ import os
 import time
 from queue import Queue
 
-from qtutils.qt.QtCore import *
-from qtutils.qt.QtGui import *
-from qtutils.qt.QtWidgets import *
+from qtutils.qt.QtCore import QTimer
+from qtutils.qt.QtGui import QIcon
+from qtutils.qt.QtWidgets import (
+    QWidget,
+    QSpacerItem,
+    QSizePolicy,
+    QPushButton,
+    QHBoxLayout,
+    QApplication,
+    QVBoxLayout,
+)
 
 import labscript_utils.excepthook
 from qtutils import UiLoader

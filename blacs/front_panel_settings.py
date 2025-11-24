@@ -13,14 +13,12 @@
 import os
 import logging
 
-from qtutils.qt.QtCore import *
-from qtutils.qt.QtGui import *
-from qtutils.qt.QtWidgets import *
+from qtutils.qt.QtWidgets import QMessageBox
 
 import labscript_utils.excepthook
 import numpy
 import labscript_utils.h5_lock, h5py
-from qtutils import *
+from qtutils import inmain_decorator
 
 from labscript_utils.connections import ConnectionTable
 

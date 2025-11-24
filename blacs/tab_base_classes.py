@@ -24,11 +24,11 @@ import os
 from types import GeneratorType
 from bisect import insort
 
-from qtutils.qt.QtCore import *
-from qtutils.qt.QtGui import *
-from qtutils.qt.QtWidgets import *
+from qtutils.qt.QtCore import Qt, QTimer
+from qtutils.qt.QtGui import QIcon, QColor
+from qtutils.qt.QtWidgets import QLabel, QWidget, QPushButton, QApplication, QVBoxLayout
 
-from qtutils import *
+from qtutils import inmain_decorator, inmain, inthread, UiLoader
 from labscript_utils.qtwidgets.outputbox import OutputBox
 import qtutils.icons
 

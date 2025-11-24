@@ -36,11 +36,17 @@ WINDOWS = platform.system() == 'Windows'
 
 # No splash update for Qt - the splash code has already imported it:
 import qtutils
-from qtutils import *
+from qtutils import inmain_decorator, inmain_later, inmain, inthread, UiLoader
 import qtutils.icons
-from qtutils.qt.QtCore import *
-from qtutils.qt.QtGui import *
-from qtutils.qt.QtWidgets import *
+from qtutils.qt.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QTimer, Qt
+from qtutils.qt.QtGui import QIcon
+from qtutils.qt.QtWidgets import (
+    QMainWindow,
+    QToolButton,
+    QMessageBox,
+    QFileDialog,
+    QApplication
+)
 from qtutils.qt import QT_ENV
 
 
@@ -166,7 +172,7 @@ class EasterEggButton(QToolButton):
         # Ensure they can't run the game twice at once:
         self.setEnabled(False)
         # Wait for the subprocess in a thread so that we know when it quits:
-        qtutils.inthread(self.run_measure_ball)
+        inthread(self.run_measure_ball)
 
     def run_measure_ball(self):
         try:
