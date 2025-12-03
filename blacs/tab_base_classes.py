@@ -25,7 +25,7 @@ from types import GeneratorType
 from bisect import insort
 
 from qtutils.qt.QtCore import Qt, QTimer
-from qtutils.qt.QtGui import QIcon, QColor
+from qtutils.qt.QtGui import QIcon, QColor, QPalette
 from qtutils.qt.QtWidgets import QLabel, QWidget, QPushButton, QApplication, QVBoxLayout
 
 from qtutils import inmain_decorator, inmain, inthread, UiLoader
@@ -261,6 +261,8 @@ class Tab(object):
 
         # Load the UI
         self._ui = UiLoader().load(os.path.join(BLACS_DIR, 'tab_frame.ui'))
+        # set tab text color from palette to respect OS theme changes
+        self._tab_text_colour = self._ui.palette().color(QPalette.ColorRole.Text)
         self._layout = self._ui.device_layout
         self._device_widget = self._ui.device_controls
         self._changed_widget = self._ui.changed_widget
@@ -412,7 +414,8 @@ class Tab(object):
                     self._tab_icon = self.ICON_ERROR
         else:
             self._ui.notresponding.hide()
-            self._tab_text_colour = 'black'
+            # set tab text color from palette to respect OS theme changes
+            self._tab_text_colour = self._ui.palette().color(QPalette.ColorRole.Text)
             if self.state == 'idle':
                 self._tab_icon = self.ICON_OK
             else:
