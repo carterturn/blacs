@@ -45,7 +45,8 @@ from qtutils.qt.QtWidgets import (
     QToolButton,
     QMessageBox,
     QFileDialog,
-    QApplication
+    QApplication,
+    QWidget
 )
 from qtutils.qt import QT_ENV
 PYQT_VERSION_STR = importlib.metadata.version(QT_ENV)
@@ -142,6 +143,23 @@ class BLACSWindow(QMainWindow):
                 inmain_later(self.blacs.on_save_exit)
 
             QTimer.singleShot(100,self.close)
+
+    def changeEvent(self, event):
+        
+        # theme update only for PySide6
+        if QT_ENV == 'PySide6' and event.type() == QEvent.Type.ThemeChange:
+            for widget in self.findChildren(QWidget):
+                # Complex widgets, like TreeView and TableView require triggering styleSheet and palette updates
+                widget.setStyleSheet(widget.styleSheet())
+                widget.setPalette(widget.palette())
+            # tab header text colors have to be done explicitly by tab
+            # because they use setTabTextColor
+            app = QApplication.instance()
+            self.blacs.update_all_tab_icon_and_text(
+                app.palette().color(QPalette.ColorRole.Text)
+            )
+
+        return super().changeEvent(event)
 
 
 class EasterEggButton(QToolButton):
@@ -532,6 +550,15 @@ class BLACS(object):
             self.settings_dict[tab_name]["saved_data"] = tab_data[tab_name]['data'] if tab_name in tab_data else {}
             tab.update_from_settings(self.settings_dict[tab_name])
 
+    def update_all_tab_icon_and_text(self, text_colour):
+        # used to repaint tab header text after theme change
+
+        for tab in self.tablist.values():
+            if tab._tab_text_colour == QColor('red'):
+                # ensure error tabs keep their red text
+                continue
+            tab._tab_text_colour = text_colour
+            tab.set_tab_icon_and_colour()
 
     def on_load_front_panel(self,*args,**kwargs):
         # get the file:

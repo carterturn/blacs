@@ -406,7 +406,7 @@ class Tab(object):
         self._ui.error_message.setHtml(prefix+self._not_responding_error_message+self._error+suffix)
         if self._error or self._not_responding_error_message:
             self._ui.notresponding.show()
-            self._tab_text_colour = 'red'
+            self._tab_text_colour = QColor('red')
             if self.error_message:
                 if self.state == 'fatal error':
                     self._tab_icon = self.ICON_FATAL_ERROR
@@ -436,7 +436,7 @@ class Tab(object):
                 return
             icon = QIcon(self._tab_icon)
             self.notebook.tabBar().setTabIcon(currentpage, icon)
-            self.notebook.tabBar().setTabTextColor(currentpage, QColor(self._tab_text_colour))
+            self.notebook.tabBar().setTabTextColor(currentpage, self._tab_text_colour)
     
     def get_tab_layout(self):
         return self._layout
