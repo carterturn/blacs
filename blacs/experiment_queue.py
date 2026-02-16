@@ -849,7 +849,7 @@ class QueueManager(object):
                 with h5py.File(path,'r+') as hdf5_file:
                     self.BLACS.front_panel_settings.store_front_panel_in_h5(hdf5_file,states,tab_positions,window_data,plugin_data,save_conn_table=False, save_queue_data=False)
 
-                    data_group = hdf5_file['/'].create_group('data')
+                    data_group = hdf5_file['/'].require_group('data')
                     # stamp with the run time of the experiment
                     hdf5_file.attrs['run time'] = run_time.strftime('%Y%m%dT%H%M%S.%f')
         
