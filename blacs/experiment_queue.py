@@ -22,16 +22,20 @@ from collections import defaultdict
 from tempfile import gettempdir
 from binascii import hexlify
 
-from qtutils.qt.QtCore import *
-from qtutils.qt.QtGui import *
-from qtutils.qt.QtWidgets import *
+from qtutils.qt.QtCore import Qt, QItemSelectionModel
+from qtutils.qt.QtGui import QIcon, QAction, QStandardItemModel, QStandardItem
+from qtutils.qt.QtWidgets import (
+    QTreeView,
+    QMenu,
+    QFileDialog,
+)
 
 import zprocess
 from labscript_utils.ls_zprocess import ProcessTree
 process_tree = ProcessTree.instance()
 import labscript_utils.h5_lock, h5py
 
-from qtutils import *
+from qtutils import inmain_decorator, inmain
 
 from labscript_utils.qtwidgets.elide_label import elide_label
 from labscript_utils.connections import ConnectionTable
@@ -988,7 +992,7 @@ class QueueManager(object):
                         message = self.process_request(path)
                     except Exception:
                         # TODO: make this error popup for the user
-                        self._logger.exception('Failed to copy h5_file (%s) for repeat run'%s)
+                        self._logger.exception('Failed to copy h5_file (%s) for repeat run' % path)
                     logger.info(message)      
 
             self.set_status("Idle")
