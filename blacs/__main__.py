@@ -32,12 +32,13 @@ import sys
 import time
 from pathlib import Path
 import platform
+import importlib.metadata
 WINDOWS = platform.system() == 'Windows'
 
 # No splash update for Qt - the splash code has already imported it:
 from qtutils import inmain_decorator, inmain_later, inmain, inthread, UiLoader
 import qtutils.icons  # import has side-effects we rely on
-from qtutils.qt.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QTimer, Qt
+from qtutils.qt.QtCore import QTimer, Qt, qVersion
 from qtutils.qt.QtGui import QIcon
 from qtutils.qt.QtWidgets import (
     QMainWindow,
@@ -47,6 +48,7 @@ from qtutils.qt.QtWidgets import (
     QApplication
 )
 from qtutils.qt import QT_ENV
+PYQT_VERSION_STR = importlib.metadata.version(QT_ENV)
 
 
 splash.update_text("importing zmq and zprocess")
@@ -84,7 +86,7 @@ logger.info(f'ZMQ version: {zmq.zmq_version()}')
 logger.info(f'h5py version: {h5py.version.info}')
 logger.info(f'Qt enviroment: {QT_ENV}')
 logger.info(f'PySide/PyQt version: {PYQT_VERSION_STR}')
-logger.info(f'Qt version: {QT_VERSION_STR}')
+logger.info(f'Qt version: {qVersion()}')
 logger.info(f'qtutils version: {qtutils.__version__}')
 logger.info(f'zprocess version: {zprocess.__version__}')
 logger.info(f'labscript_utils version: {labscript_utils.__version__}')
@@ -537,7 +539,7 @@ class BLACS(object):
         dialog = QFileDialog(None,"Select file to load", self.exp_config.get('paths','experiment_shot_storage'), "HDF5 files (*.h5 *.hdf5)")
         dialog.setViewMode(QFileDialog.Detail)
         dialog.setFileMode(QFileDialog.ExistingFile)
-        if dialog.exec_():
+        if dialog.exec():
             selected_files = dialog.selectedFiles()
             filepath = str(selected_files[0])
             # Qt has this weird behaviour where if you type in the name of a file that exists
@@ -556,7 +558,7 @@ class BLACS(object):
                     message.setWindowTitle("BLACS")
                     message.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
 
-                    if message.exec_() == QMessageBox.Yes:
+                    if message.exec() == QMessageBox.Yes:
                         front_panel_settings = FrontPanelSettings(filepath, self.connection_table)
                         settings,question,error,tab_data = front_panel_settings.restore()
                         #TODO: handle question/error
@@ -588,7 +590,7 @@ class BLACS(object):
                     message.setText("Unable to load the front panel. The error encountered is printed below.\n\n%s"%str(e))
                     message.setIcon(QMessageBox.Information)
                     message.setWindowTitle("BLACS")
-                    message.exec_()
+                    message.exec()
                 finally:
                     dialog.deleteLater()
             else:
@@ -597,7 +599,7 @@ class BLACS(object):
                 message.setText("You did not select a file ending with .h5 or .hdf5. Please try again")
                 message.setIcon(QMessageBox.Information)
                 message.setWindowTitle("BLACS")
-                message.exec_()
+                message.exec()
                 QTimer.singleShot(10,self.on_load_front_panel)
 
     def on_save_exit(self):
@@ -684,7 +686,7 @@ class BLACS(object):
             dialog.setFileMode(QFileDialog.AnyFile)
             dialog.setAcceptMode(QFileDialog.AcceptSave)
 
-            if dialog.exec_():
+            if dialog.exec():
                 current_file = str(dialog.selectedFiles()[0])
                 if not current_file.endswith('.h5'):
                     current_file += '.h5'
@@ -780,6 +782,6 @@ if __name__ == '__main__':
     splash.hide()
 
     def execute_program():
-        qapplication.exec_()
+        qapplication.exec()
 
     sys.exit(execute_program())

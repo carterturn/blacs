@@ -981,6 +981,6 @@ if __name__ == '__main__':
     window.add_my_tab(tab1)
     window.show()
     def run():
-        app.exec_()
+        app.exec()
         
     sys.exit(run())

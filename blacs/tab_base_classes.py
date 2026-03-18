@@ -1242,7 +1242,7 @@ if __name__ == '__main__':
     
     window.show()
     def run():
-        app.exec_()
+        app.exec()
         tab1.close_tab()
         tab2.close_tab()
     sys.exit(run())
