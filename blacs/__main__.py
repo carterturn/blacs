@@ -38,8 +38,8 @@ WINDOWS = platform.system() == 'Windows'
 # No splash update for Qt - the splash code has already imported it:
 from qtutils import inmain_decorator, inmain_later, inmain, inthread, UiLoader
 import qtutils.icons  # import has side-effects we rely on
-from qtutils.qt.QtCore import QTimer, Qt, qVersion
-from qtutils.qt.QtGui import QIcon
+from qtutils.qt.QtCore import QTimer, Qt, qVersion, QEvent
+from qtutils.qt.QtGui import QIcon, QColor, QPalette
 from qtutils.qt.QtWidgets import (
     QMainWindow,
     QToolButton,
