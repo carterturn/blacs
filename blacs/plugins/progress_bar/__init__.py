@@ -99,7 +99,7 @@ class Plugin(object):
             self.style = QtWidgets.QApplication.style()
         self.bar.setStyle(self.style)
         self.bar.setMaximum(BAR_MAX)
-        self.bar.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.bar.setAlignment(QtCore.Qt.AlignCenter)
         # Add our controls to the BLACS gui:
         BLACS['ui'].queue_status_verticalLayout.insertWidget(0, self.ui)
         # We need to know the name of the master pseudoclock so we can look up

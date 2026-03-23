@@ -620,7 +620,7 @@ class Tab(object):
             currentpage = self.notebook.indexOf(self._ui)
             self.notebook.removeTab(currentpage)
             temp_widget = QLabel("Waiting for tab mainloop and worker(s) to exit")
-            temp_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            temp_widget.setAlignment(Qt.AlignCenter)
             self.notebook.insertTab(currentpage, temp_widget, '[%s]' % self.device_name)
             self.notebook.tabBar().setTabIcon(currentpage, QIcon(self.ICON_BUSY))
             self.notebook.tabBar().setTabTextColor(currentpage, QColor('grey'))
