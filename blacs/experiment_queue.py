@@ -502,6 +502,13 @@ class QueueManager(object):
     @inmain_decorator(wait_for_return=True)
     def get_device_error_state(self,name,device_list):
         return device_list[name].error_message
+
+    def _abort_buffered_devices(self, devices_in_use, restart_function):
+        self.current_queue = queue.Queue()
+        for devicename, tab in devices_in_use.items():
+            if tab.mode == MODE_BUFFERED or tab.mode == MODE_TRANSITION_TO_BUFFERED:
+                tab.abort_buffered(self.current_queue)
+            inmain(tab.disconnect_restart_receiver, restart_function)
        
      
     def manage(self):
@@ -816,12 +823,7 @@ class QueueManager(object):
                 self.prepend(path)
                 
                 # Need to put devices back in manual mode
-                self.current_queue = queue.Queue()
-                for devicename, tab in devices_in_use.items():
-                    if tab.mode == MODE_BUFFERED or tab.mode == MODE_TRANSITION_TO_BUFFERED:
-                        tab.abort_buffered(self.current_queue)
-                    # disconnect restart signal from tabs 
-                    inmain(tab.disconnect_restart_receiver,restart_function)
+                self._abort_buffered_devices(devices_in_use, restart_function)
                 self.set_status("Error in queue manager\nQueue paused")
 
                 # disconnect and disable abort button
@@ -916,6 +918,7 @@ class QueueManager(object):
                 error_condition = True
                 logger.exception("Error in queue manager execution. Queue paused.")
                 self.set_status("Error in queue manager\nQueue paused")
+                self._abort_buffered_devices(devices_in_use, restart_function)
 
                 # Raise the error in a thread for visibility
                 zprocess.raise_exception_in_thread(sys.exc_info())
@@ -997,4 +1000,3 @@ class QueueManager(object):
 
             self.set_status("Idle")
         logger.info('Stopping')
-
