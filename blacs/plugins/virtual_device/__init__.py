@@ -30,6 +30,7 @@ from blacs.plugins import PLUGINS_DIR, callback
 from blacs.device_base_class import DeviceTab
 from blacs.output_classes import AO as AO_output_class
 from blacs.output_classes import DO as DO_output_class
+from blacs.output_classes import EO as EO_output_class
 from blacs.output_classes import DDS as DDS_output_class
 
 from .virtual_device_tab import VirtualDeviceTab
@@ -122,6 +123,7 @@ class Plugin(object):
             vd_tab.create_widgets(self.BLACS['ui'].blacs.tablist,
                                   self.virtual_devices[name]['AO'],
                                   self.virtual_devices[name]['DO'],
+                                  self.virtual_devices[name]['EO'],
                                   self.virtual_devices[name]['DDS'])
 
         self.setup_complete = True
@@ -210,6 +212,7 @@ class Menu(object):
         '''
         AOs = []
         DOs = []
+        EOs = []
         DDSs = []
 
         device_conn = conn_table.find_by_name(dev_name)
@@ -231,10 +234,12 @@ class Menu(object):
                 DOs.append((child, child_dev.parent_port, inv))
             elif isinstance(channel, AO_output_class):
                 AOs.append((child, child_dev.parent_port))
+            elif isinstance(channel, EO_output_class):
+                EOs.append((child, child_dev.parent_port))
             elif isinstance(channel, DDS_output_class):
                 DDSs.append((child, child_dev.parent_port))
 
-        return AOs, DOs, DDSs
+        return AOs, DOs, EOs, DDSs
 
     def __init__(self, BLACS):
         '''
@@ -258,6 +263,7 @@ class Menu(object):
 
                 analog_outputs = QStandardItem('Analog Outputs')
                 digital_outputs = QStandardItem('Digital Outputs')
+                enum_outputs = QStandardItem('Enum Outputs')
                 dds_outputs = QStandardItem('DDS Outputs')
 
                 device_item.appendRow(analog_outputs)
@@ -265,7 +271,7 @@ class Menu(object):
                 device_item.appendRow(dds_outputs)
 
                 root_devs = self.BLACS['ui'].blacs.tablist.keys()
-                AOs, DOs, DDSs = self._get_child_outputs(connection_table, root_devs, tab_name, tab)
+                AOs, DOs, EOs, DDSs = self._get_child_outputs(connection_table, root_devs, tab_name, tab)
 
                 for DO in DOs:
                     DO_item = QStandardItem(DO[1] + ' - ' + DO[0])
@@ -284,6 +290,14 @@ class Menu(object):
                     add_to_vd_item.setToolTip('Add this output to selected virtual device')
                     add_to_vd_item.setData(AO[1] + ' - ' + AO[0], self.CT_TREE_ROLE_NAME)
                     analog_outputs.appendRow([AO_item, add_to_vd_item])
+                for EO in EOs:
+                    EO_item = QStandardItem(EO[1] + ' - ' + EO[0])
+                    add_to_vd_item = QStandardItem()
+                    add_to_vd_item.setIcon(QIcon(':qtutils/fugue/arrow'))
+                    add_to_vd_item.setEditable(False)
+                    add_to_vd_item.setToolTip('Add this output to selected virtual device')
+                    add_to_vd_item.setData(EO[1] + ' - ' + EO[0], self.CT_TREE_ROLE_NAME)
+                    enum_outputs.appendRow([EO_item, add_to_vd_item])
                 for DDS in DDSs:
                     DDS_item = QStandardItem(DDS[1] + ' - ' + DDS[0])
                     add_to_vd_item = QStandardItem()
@@ -452,6 +466,16 @@ class Menu(object):
                 do_item = QStandardItem(DO[0] + '.' + chan.name)
                 do_item.setData(DO[2], self.VD_TREE_ROLE_DO_INVERTED)
                 digital_outputs.appendRow(self.make_virtual_device_output_row(do_item))
+
+            enum_outputs = QStandardItem('Enum Outputs')
+            device_item.appendRow(enum_outputs)
+            for EO in vd['EO']:
+                if EO[0] not in self.BLACS['ui'].blacs.tablist:
+                    # BLACS tab removed, remove virtual device
+                    continue
+                chan = self.BLACS['ui'].blacs.tablist[EO[0]].get_channel(EO[1])
+                eo_item = QStandardItem(EO[0] + '.' + chan.name)
+                enum_outputs.appendRow(self.make_virtual_device_output_row(eo_item))
 
             dds_outputs = QStandardItem('DDS Outputs')
             device_item.appendRow(dds_outputs)
