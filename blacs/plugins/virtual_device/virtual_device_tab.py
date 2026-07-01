@@ -10,7 +10,7 @@ from blacs.tab_base_classes import PluginTab
 
 class VirtualDeviceTab(PluginTab):
 
-    def create_widgets(self, blacs_tablist, AOs, DOs, DDSs):
+    def create_widgets(self, blacs_tablist, AOs, DOs, EOs, DDSs):
         '''
         This function sets up the tab, and should be called as soon as the plugin is otherwise ready.
         Here, we create dictionaries of widgets (initially connecting them to outputs).
@@ -18,6 +18,7 @@ class VirtualDeviceTab(PluginTab):
         self._blacs_tablist = blacs_tablist
         self._AOs = {(AO[0], AO[1]): None for AO in AOs}
         self._DOs = {(DO[0], DO[1], DO[2]): None for DO in DOs}
+        self._EOs = {(EO[0], EO[1]): None for EO in EOs}
         self._DDSs = {(DDS[0], DDS[1]): None for DDS in DDSs}
 
         for AO in self._AOs.keys():
@@ -36,6 +37,14 @@ class VirtualDeviceTab(PluginTab):
                 self._DOs[DO].setText(virtual_label)
                 self._DOs[DO].last_DO = None
 
+        for EO in self._EOs.keys():
+            if self._EOs[EO] is None:
+                chan = self._blacs_tablist[EO[0]].get_channel(EO[1])
+                orig_label = chan.name.split('-')
+                virtual_label = '%s\n%s' % (EO[0]+'.'+orig_label[0], orig_label[1])
+                self._EOs[EO] = chan.create_widget(virtual_label, False, None)
+                self._EOs[EO].last_AO = None
+
         for DDS in self._DDSs.keys():
             if self._DDSs[DDS] is None:
                 chan = self._blacs_tablist[DDS[0]].get_channel(DDS[1])
@@ -48,6 +57,8 @@ class VirtualDeviceTab(PluginTab):
             self.place_widget_group('Analog Outputs', [v for k, v in self._AOs.items()])
         if len(self._DOs) > 0:
             self.place_widget_group('Digital Outputs', [v for k, v in self._DOs.items()])
+        if len(self._EOs) > 0:
+            self.place_widget_group('Enum Outputs', [v for k, v in self._EOs.items()])
         if len(self._DDSs) > 0:
             self.place_widget_group('DDS Outputs', [v for k, v in self._DDSs.items()])
 
@@ -68,6 +79,11 @@ class VirtualDeviceTab(PluginTab):
                 new_DO = self._blacs_tablist[DO[0]].get_channel(DO[1])
                 if self._DOs[DO].get_DO() is None and self._DOs[DO].last_DO != new_DO:
                     self._DOs[DO].set_DO(new_DO)
+        for EO in self._EOs.keys():
+            if self._EOs[EO] is not None:
+                new_EO = self._blacs_tablist[EO[0]].get_channel(EO[1])
+                if self._EOs[EO].get_EO() is None and self._EOs[EO].last_EO != new_EO:
+                    self._EOs[EO].set_EO(new_EO)
         for DDS in self._DDSs.keys():
             if self._DDSs[DDS] is not None:
                 new_DDS = self._blacs_tablist[DDS[0]].get_channel(DDS[1])
@@ -87,6 +103,10 @@ class VirtualDeviceTab(PluginTab):
             if DO[0] == closing_device_name:
                 self._DOs[DO].last_DO = self._DOs[DO].get_DO()
                 self._DOs[DO].set_DO(None)
+        for EO in self._EOs.keys():
+            if EO[0] == closing_device_name:
+                self._EOs[EO].last_EO = self._EOs[EO].get_EO()
+                self._EOs[EO].set_EO(None)
         for DDS in self._DDSs.keys():
             if DDS[0] == closing_device_name:
                 old_DDS = self._blacs_tablist[DDS[0]].get_channel(DDS[1])

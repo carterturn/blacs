@@ -30,6 +30,7 @@ from blacs.plugins import PLUGINS_DIR, callback
 from blacs.device_base_class import DeviceTab
 from blacs.output_classes import AO as AO_output_class
 from blacs.output_classes import DO as DO_output_class
+from blacs.output_classes import EO as EO_output_class
 from blacs.output_classes import DDS as DDS_output_class
 
 from .virtual_device_tab import VirtualDeviceTab
@@ -42,6 +43,19 @@ logger = logging.getLogger('BLACS.plugin.%s'%module)
 CONNECT_CHECK_INTERVAL = 0.1
 
 class Plugin(object):
+    '''
+    The `virtual_device` plugin provides a way to group analog, digital, and DDS outputs
+    that are related in purpose but attached to different hardware devices into a single BLACS tab.
+
+    A typical use case might be creating a "MOT" panel from analog and digital channels on a dedicated analog card and digital card.
+
+    To enable the `virtual_device` plugin, add the line `virtual_device = True`
+    to your `.ini` config file in the `labconfig` folder.
+    After restarting BLACS, click the `Edit` option in the new `Virtual Devices` menu
+    to begin constructing virtual devices.
+    Modifying virtual devices requires restarting BLACS.
+    '''
+
     def __init__(self, initial_settings):
         self.menu = None
         self.notifications = {}
@@ -92,6 +106,10 @@ class Plugin(object):
             vd_tab.disconnect_widgets(closing_device_name)
 
     def reconnect(self, stop_event):
+        '''
+        Runs constantly in a second thread to reconnect widgets in virtual devices
+        to hardware devices after the hardware device tabs restart.
+        '''
         while not stop_event.wait(CONNECT_CHECK_INTERVAL):
             self.connect_widgets()
 
@@ -105,6 +123,7 @@ class Plugin(object):
             vd_tab.create_widgets(self.BLACS['ui'].blacs.tablist,
                                   self.virtual_devices[name]['AO'],
                                   self.virtual_devices[name]['DO'],
+                                  self.virtual_devices[name]['EO'],
                                   self.virtual_devices[name]['DDS'])
 
         self.setup_complete = True
@@ -155,6 +174,15 @@ class Plugin(object):
             pass
 
 class Menu(object):
+    '''
+    The virtual device adding/editing menu.
+
+    Reads the connection table to determine what hardware is available,
+    then allows adding or removing hardware from virtual devices.
+
+    Stores new virtual devices in the Plugin object,
+    which does not reload them until a BLACS restart.
+    '''
     VD_TREE_DUMMY_ROW_TEXT = '<Click to add virtual device>'
 
     CT_TREE_COL_NAME = 0
@@ -184,6 +212,7 @@ class Menu(object):
         '''
         AOs = []
         DOs = []
+        EOs = []
         DDSs = []
 
         device_conn = conn_table.find_by_name(dev_name)
@@ -205,12 +234,20 @@ class Menu(object):
                 DOs.append((child, child_dev.parent_port, inv))
             elif isinstance(channel, AO_output_class):
                 AOs.append((child, child_dev.parent_port))
+            elif isinstance(channel, EO_output_class):
+                EOs.append((child, child_dev.parent_port))
             elif isinstance(channel, DDS_output_class):
                 DDSs.append((child, child_dev.parent_port))
 
-        return AOs, DOs, DDSs
+        return AOs, DOs, EOs, DDSs
 
     def __init__(self, BLACS):
+        '''
+        Some small preparation for the menu.
+
+        Parses the connection table immediately,
+        defers parsing of current virtual devices so that they can be edited multiple times.
+        '''
         self.BLACS = BLACS
 
         self.connection_table_model = QStandardItemModel()
@@ -226,6 +263,7 @@ class Menu(object):
 
                 analog_outputs = QStandardItem('Analog Outputs')
                 digital_outputs = QStandardItem('Digital Outputs')
+                enum_outputs = QStandardItem('Enum Outputs')
                 dds_outputs = QStandardItem('DDS Outputs')
 
                 device_item.appendRow(analog_outputs)
@@ -233,7 +271,7 @@ class Menu(object):
                 device_item.appendRow(dds_outputs)
 
                 root_devs = self.BLACS['ui'].blacs.tablist.keys()
-                AOs, DOs, DDSs = self._get_child_outputs(connection_table, root_devs, tab_name, tab)
+                AOs, DOs, EOs, DDSs = self._get_child_outputs(connection_table, root_devs, tab_name, tab)
 
                 for DO in DOs:
                     DO_item = QStandardItem(DO[1] + ' - ' + DO[0])
@@ -252,6 +290,14 @@ class Menu(object):
                     add_to_vd_item.setToolTip('Add this output to selected virtual device')
                     add_to_vd_item.setData(AO[1] + ' - ' + AO[0], self.CT_TREE_ROLE_NAME)
                     analog_outputs.appendRow([AO_item, add_to_vd_item])
+                for EO in EOs:
+                    EO_item = QStandardItem(EO[1] + ' - ' + EO[0])
+                    add_to_vd_item = QStandardItem()
+                    add_to_vd_item.setIcon(QIcon(':qtutils/fugue/arrow'))
+                    add_to_vd_item.setEditable(False)
+                    add_to_vd_item.setToolTip('Add this output to selected virtual device')
+                    add_to_vd_item.setData(EO[1] + ' - ' + EO[0], self.CT_TREE_ROLE_NAME)
+                    enum_outputs.appendRow([EO_item, add_to_vd_item])
                 for DDS in DDSs:
                     DDS_item = QStandardItem(DDS[1] + ' - ' + DDS[0])
                     add_to_vd_item = QStandardItem()
@@ -292,6 +338,12 @@ class Menu(object):
         return [name_item, up_item, dn_item, remove_item]
 
     def on_treeView_connection_table_clicked(self, index):
+        '''
+        Processes user clicking on an item in the connection table tree.
+
+        The only column we respond to is the "add" column.
+        This adds a hardware output to the currently selected virtual device
+        '''
         item = self.connection_table_model.itemFromIndex(index)
         if item.column() == self.CT_TREE_COL_ADD:
             # Add this output to the currently selected virtual devices
@@ -352,6 +404,15 @@ class Menu(object):
             item.setText(self.VD_TREE_DUMMY_ROW_TEXT)
 
     def on_treeView_virtual_devices_clicked(self, index):
+        '''
+        Processes user clicking on an item in the virtual device tree.
+
+        Options are:
+        -Dummy row clicked: add new device
+        -Up or down arrow clicked: reorder hardware output
+        -Remove virtual device clicked: remove virtual device
+        -Remove hardware output clicked: remove hardware output from virtual device
+        '''
         item = self.virtual_device_model.itemFromIndex(index)
         if item.data(self.VD_TREE_ROLE_IS_DUMMY_ROW):
             name_index = index.sibling(index.row(), self.VD_TREE_COL_NAME)
@@ -371,8 +432,11 @@ class Menu(object):
             item.parent().removeRow(index.row())
 
     def on_edit_virtual_devices(self, *args, **kwargs):
-        # Construct tree of virtual devices
-        # This happens here so that the tree is up to date
+        '''
+        Open the editing menu.
+
+        At this point, virtual devices are parsed and GUI objects are instantiated.
+        '''
         for vd_name, vd in self.BLACS['plugins'][module].get_save_virtual_devices().items():
             device_item = QStandardItem(vd_name)
             remove_item = QStandardItem()
@@ -402,6 +466,16 @@ class Menu(object):
                 do_item = QStandardItem(DO[0] + '.' + chan.name)
                 do_item.setData(DO[2], self.VD_TREE_ROLE_DO_INVERTED)
                 digital_outputs.appendRow(self.make_virtual_device_output_row(do_item))
+
+            enum_outputs = QStandardItem('Enum Outputs')
+            device_item.appendRow(enum_outputs)
+            for EO in vd['EO']:
+                if EO[0] not in self.BLACS['ui'].blacs.tablist:
+                    # BLACS tab removed, remove virtual device
+                    continue
+                chan = self.BLACS['ui'].blacs.tablist[EO[0]].get_channel(EO[1])
+                eo_item = QStandardItem(EO[0] + '.' + chan.name)
+                enum_outputs.appendRow(self.make_virtual_device_output_row(eo_item))
 
             dds_outputs = QStandardItem('DDS Outputs')
             device_item.appendRow(dds_outputs)
@@ -497,6 +571,10 @@ class Menu(object):
         return virtual_device_data
 
     def on_save(self):
+        '''
+        Pass new virtual devices back to the plugin.
+        Instructs the user to restart BLACS to reload virtual devices.
+        '''
         self.BLACS['plugins'][module].set_save_virtual_devices(self._encode_virtual_devices())
         # Cleanup model in case editing window is reopened.
         self.virtual_device_model.removeRows(0, self.virtual_device_model.rowCount())
@@ -504,6 +582,9 @@ class Menu(object):
                                 'New virtual devices saved. Please restart BLACS to load new devices.')
 
     def on_cancel(self):
+        '''
+        Inform the user that nothing has happened.
+        '''
         self.virtual_device_model.removeRows(0, self.virtual_device_model.rowCount())
         QMessageBox.information(self.BLACS['ui'], 'Virtual Devices Not Saved',
                                 'Editing of virtual devices canceled.')
