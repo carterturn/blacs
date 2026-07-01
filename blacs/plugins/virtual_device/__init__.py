@@ -224,10 +224,11 @@ class Menu(object):
             child_dev = device_conn.find_by_name(child)
             channel = tab.get_channel(child_dev.parent_port)
             if channel is None:
-                AOs_, DOs_, DDSs_ = self._get_child_outputs(conn_table, root_devs, child, tab)
+                AOs_, DOs_, EOs_, DDSs_ = self._get_child_outputs(conn_table, root_devs, child, tab)
 
                 AOs += AOs_
                 DOs += DOs_
+                EOs += EOs_
                 DDSs += DDSs_
             elif isinstance(channel, DO_output_class):
                 inv = child_dev.properties['inverted'] if 'inverted' in child_dev.properties else False
@@ -399,6 +400,7 @@ class Menu(object):
                                                 [new_device_item, None, None, remove_item])
             new_device_item.appendRow(QStandardItem('Analog Outputs'))
             new_device_item.appendRow(QStandardItem('Digital Outputs'))
+            new_device_item.appendRow(QStandardItem('Enum Outputs'))
             new_device_item.appendRow(QStandardItem('DDS Outputs'))
 
             item.setText(self.VD_TREE_DUMMY_ROW_TEXT)
@@ -551,7 +553,7 @@ class Menu(object):
             if vd.text() == self.VD_TREE_DUMMY_ROW_TEXT:
                 continue
 
-            virtual_device_data[vd.text()] = {'AO': [], 'DO': [], 'DDS': []}
+            virtual_device_data[vd.text()] = {'AO': [], 'DO': [], 'EO': [], 'DDS': []}
             for j in range(vd.rowCount()):
                 output_group = vd.child(j)
                 if output_group.text() == 'Analog Outputs':
@@ -563,6 +565,10 @@ class Menu(object):
                         DO_name = output_group.child(k).text().split(' - ')[0].split('.')
                         inverted = output_group.child(k).data(self.VD_TREE_ROLE_DO_INVERTED)
                         virtual_device_data[vd.text()]['DO'].append((DO_name[0], DO_name[1], inverted))
+                elif output_group.text() == 'Enum Outputs':
+                    for k in range(output_group.rowCount()):
+                        EO_name = output_group.child(k).text().split(' - ')[0].split('.')
+                        virtual_device_data[vd.text()]['EO'].append((EO_name[0], EO_name[1]))
                 elif output_group.text() == 'DDS Outputs':
                     for k in range(output_group.rowCount()):
                         DDS_name = output_group.child(k).text().split(' - ')[0].split('.')
